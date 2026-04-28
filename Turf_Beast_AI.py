@@ -4,90 +4,117 @@ import numpy as np
 from groq import Groq
 
 # إعداد الصفحة
-st.set_page_config(page_title="Turf Beast AI", page_icon="🐎", layout="centered")
+st.set_page_config(page_title="Turf Beast AI Explorer", page_icon="🐎", layout="centered")
 
-# ستايل مغربي خفيف
+# ستايل احترافي متناسق
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stButton>button { width: 100%; border-radius: 20px; background-color: #2e7d32; color: white; }
+    .main { background-color: #f8f9fa; }
+    .stButton>button { 
+        width: 100%; 
+        border-radius: 12px; 
+        background-color: #1b5e20; 
+        color: white; 
+        font-weight: bold;
+        border: none;
+        padding: 10px;
+    }
+    .stButton>button:hover {
+        background-color: #2e7d32;
+        border: none;
+    }
+    .prediction-box {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 5px solid #1b5e20;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        color: #333;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🐎 Turf Beast AI Explorer")
-st.write("تحليل احترافي مبني على الإحصاء وذكاء Groq")
+st.markdown("**نظام تحليل مراهنات الخيول المبني على الإحصاء والذكاء الاصطناعي**")
 
-# إدخال المفتاح (تقدر تخليه ثابت إلا بغيتي)
+# إعدادات الشريط الجانبي
+st.sidebar.header("⚙️ الإعدادات")
 api_key = st.sidebar.text_input("Enter Groq API Key", type="password")
 
-# فورم إدخال البيانات
-with st.expander("📊 مدخلات البيانات التاريخية", expanded=True):
-    raw_data = st.text_area("دخل نتائج الكورسات اللخرة (فرق بيناتهم بـ فاصلة)", 
-                          placeholder="مثال: 4, 12, 1, 8, 5, 4, 9, 12, 3")
+# اختيار الموديل (تم تحديث الموديلات هنا)
+model_choice = st.sidebar.selectbox("اختر موديل الذكاء الاصطناعي", 
+                                    ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"])
+
+# واجهة إدخال البيانات
+with st.container():
+    st.subheader("📊 إدخال البيانات التاريخية")
+    raw_data = st.text_area("أدخل الأرقام الرابحة (افصل بينها بفاصلة)", 
+                          placeholder="مثال: 5, 12, 1, 8, 3, 5, 9, 12...",
+                          help="دخل أرقام الخيول اللي ربحوا ف الكورسات اللي فاتو")
     
     col1, col2 = st.columns(2)
     with col1:
-        top_n = st.slider("عدد الأرقام اللي بغيتي تخمن", 3, 8, 5)
+        top_n = st.slider("عدد الأرقام المقترحة", 3, 10, 5)
     with col2:
-        risk_level = st.select_slider("مستوى المخاطرة", options=["Safe", "Balanced", "Aggressive"])
+        risk_level = st.select_slider("مستوى المخاطرة (Risk)", 
+                                    options=["Low", "Medium", "High"])
 
-if st.button("🚀 تحليل وتوليد التوقعات"):
+if st.button("🚀 ابدأ التحليل الذكي"):
     if not api_key:
-        st.error("خاصك تدخّل API Key ديال Groq")
+        st.error("المرجو إدخال مفتاح API Key الخاص بـ Groq في الجانب.")
     elif not raw_data:
-        st.warning("دخل الأرقام أولا أ خاي")
+        st.warning("المرجو إدخال البيانات التاريخية للتحليل.")
     else:
         try:
-            # 1. المرحلة الإحصائية (Pure Python)
-            numbers_list = [int(n.strip()) for n in raw_data.split(",") if n.strip().isdigit()]
-            df = pd.Series(numbers_list).value_counts().reset_index()
-            df.columns = ['Number', 'Frequency']
+            # 1. المعالجة الإحصائية (Clean Data)
+            clean_list = [int(n.strip()) for n in raw_data.split(",") if n.strip().isdigit()]
             
-            # حساب الاحتمالات المبسطة
-            total = len(numbers_list)
-            df['Probability'] = (df['Frequency'] / total) * 100
-            
-            # 2. تحضير التحليل للـ AI
-            stats_summary = df.to_string(index=False)
-            last_5 = numbers_list[-5:] # آخر 5 أرقام دخلو
-            
-            # 3. استشارة Groq (The Brain)
-            client = Groq(api_key=api_key)
-            
-            prompt = f"""
-            System: You are an expert Horse Racing Analyst (Turf specialist).
-            Data Analysis:
-            - Historical Frequency of numbers: {stats_summary}
-            - Last 5 winners trend: {last_5}
-            - User Risk Level: {risk_level}
-            - Target: Suggest the best {top_n} numbers for the next Paris Turf race.
-            
-            Task:
-            1. Use the 'Law of Small Numbers' and 'Hot/Cold numbers' theory to analyze.
-            2. Provide the top {top_n} suggested numbers.
-            3. Give a professional 'Expert Insight' (max 2 lines) in English about why these numbers.
-            4. Add a disclaimer: 'Racing involves luck'.
-            """
-            
-            with st.spinner('جاري تحليل الأرقام بدقة...'):
-                chat_completion = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    model="llama3-70b-8192", # استعملنا الموديل الكبير للدقة
-                    temperature=0.6 # توازن بين الإبداع والمنطق
-                )
+            if len(clean_list) < 5:
+                st.error("دخل على الأقل 5 أرقام باش يكون التحليل منطقي.")
+            else:
+                # حساب الترددات باستعمال Pandas
+                df_counts = pd.Series(clean_list).value_counts().reset_index()
+                df_counts.columns = ['Number', 'Frequency']
                 
-                response = chat_completion.choices[0].message.content
+                # 2. استشارة Groq AI
+                client = Groq(api_key=api_key)
                 
-                # عرض النتائج
-                st.subheader("🎯 التوقعات المقترحة")
-                st.markdown(f"```\n{response}\n```")
-                
-                # رسم مبياني بسيط للتردد
-                st.subheader("📈 تكرار الأرقام في البيانات اللي دخلتي")
-                st.bar_chart(df.set_index('Number')['Frequency'])
-                
+                analysis_prompt = f"""
+                Role: Professional Paris Turf Analyst.
+                Data:
+                - Historical Winners: {clean_list}
+                - Frequency Map: {df_counts.to_dict(orient='records')}
+                - Risk Preference: {risk_level}
+                - Target: Predict top {top_n} likely numbers for the next race.
+
+                Instruction:
+                Analyze trends (hot numbers, cold numbers, patterns). 
+                Provide the top {top_n} numbers as a clear list.
+                Give a professional logic reasoning in English (max 3 sentences).
+                Finish with: 'Disclaimer: Horse racing involves probability and luck.'
+                """
+
+                with st.spinner('جاري معالجة البيانات واستنتاج التوقعات...'):
+                    completion = client.chat.completions.create(
+                        messages=[{"role": "user", "content": analysis_prompt}],
+                        model=model_choice,
+                        temperature=0.5
+                    )
+                    
+                    response_text = completion.choices[0].message.content
+
+                    # 3. عرض النتائج
+                    st.success("✅ تم التحليل بنجاح")
+                    
+                    st.markdown("### 🎯 التوقعات والتحليل")
+                    st.markdown(f'<div class="prediction-box">{response_text}</div>', unsafe_allow_html=True)
+                    
+                    # مبيان إحصائي للتردد
+                    st.markdown("### 📈 مبيان تكرار الأرقام")
+                    st.bar_chart(df_counts.set_index('Number'))
+
         except Exception as e:
-            st.error(f"وقع خطأ في معالجة البيانات: {e}")
+            st.error(f"وقع خطأ غير متوقع: {e}")
 
 st.divider()
-st.caption("Developed by Mouhcine Digital Systems - AI Marketing Logic applied to Turf")
+st.caption("© 2026 Mouhcine Digital Systems | AI Logic for Strategic Analysis")
