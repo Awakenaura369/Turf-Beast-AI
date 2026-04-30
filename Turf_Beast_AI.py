@@ -1,4 +1,4 @@
-🔥 TURF BEAST AI - ULTIMATE VERSION (UI + AI + PRO ENGINE)
+# TURF BEAST AI - ULTIMATE VERSION (UI + AI + PRO ENGINE)
 
 import streamlit as st import pandas as pd import numpy as np from collections import Counter from datetime import datetime import re from groq import Groq
 
