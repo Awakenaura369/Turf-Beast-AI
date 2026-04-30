@@ -1,8 +1,4 @@
-streamlit 
-pandas 
-numpy 
-groq 
-plotly 
-reportlab 
-openpyxl 
-scikit-learn
+streamlit
+pandas
+numpy
+groq
