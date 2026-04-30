@@ -1,4 +1,8 @@
 streamlit 
-groq 
 pandas 
-numpy
+numpy 
+groq 
+plotly 
+reportlab 
+openpyxl 
+scikit-learn
